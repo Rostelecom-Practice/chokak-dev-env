@@ -1,0 +1,15 @@
+[submodule "chokak-server"]
+	path = chokak-server
+	url = git@github.com:Rostelecom-Practice/chokak-server.git
+[submodule "chokak-gateway-server"]
+	path = chokak-gateway-server
+	url = git@github.com:Rostelecom-Practice/chokak-gateway-server.git
+[submodule "external-service-example"]
+	path = external-service-example
+	url = git@github.com:Rostelecom-Practice/external-service-example.git
+[submodule "chokak-telegram-bot"]
+	path = chokak-telegram-bot
+	url = git@github.com:Rostelecom-Practice/chokak-telegram-bot.git
+[submodule "chokak-cloud-storage"]
+	path = chokak-cloud-storage
+	url = git@github.com:Rostelecom-Practice/chokak-cloud-storage.git
