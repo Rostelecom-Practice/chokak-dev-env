@@ -1,0 +1,151 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc 127.0.0.1 2181 | grep imok"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_LOG_DIRS: /kafka-logs
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - kafka-data:/kafka-logs
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    ports:
+      - "5430:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: reviews_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  chokak-cloud-storage:
+    build:
+      context: ./chokak-cloud-storage
+      dockerfile: Dockerfile
+    image: chokak-cloud-storage:latest
+    container_name: chokak-cloud-storage
+    ports:
+      - "8088:8088"
+    networks:
+      - chokak-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8088"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  chokak-gateway-server:
+    build:
+      context: ./chokak-gateway-server
+      dockerfile: Dockerfile
+    image: chokak-gateway-server:latest
+    container_name: chokak-gateway-server
+    ports:
+      - "8000:8000"
+    depends_on:
+      chokak-cloud-storage:
+        condition: service_healthy
+      chokak-server:
+        condition: service_healthy
+      external-service-example:
+        condition: service_healthy
+    networks:
+      - chokak-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  chokak-server:
+    build:
+      context: ./chokak-server
+      dockerfile: Dockerfile
+    image: chokak-server:latest
+    container_name: chokak-server
+    ports:
+      - "8084:8084"
+    depends_on:
+      chokak-cloud-storage:
+        condition: service_healthy
+    networks:
+      - chokak-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8084"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  external-service-example:
+    build:
+      context: ./external-service-example
+      dockerfile: Dockerfile
+    image: external-service-example:latest
+    container_name: external-service-example
+    ports:
+      - "8100:8100"
+    networks:
+      - chokak-network
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8100"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+networks:
+  chokak-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+  zookeeper-data:
+    driver: local
+  zookeeper-logs:
+    driver: local
+  kafka-data:
+    driver: local
