@@ -20,11 +20,13 @@ jobs:
 
       - name: Commit and push updated submodules
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git status --porcelain | grep -q '^ M\|^A \|^ D\|^??'; then
-            git add .
-            git commit -m "Update submodules"
-            git push
-          else
-            echo "No changes to commit."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            
+            if git status --porcelain | grep -q '^ M\|^A \|^ D\|^??'; then
+                git add .
+                git commit -m "Update submodules"
+                git push
+            else
+                echo "No changes to commit."
+            fi
