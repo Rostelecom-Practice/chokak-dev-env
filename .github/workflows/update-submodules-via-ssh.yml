@@ -1,0 +1,39 @@
+name: Update Submodules via SSH
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ACTIONS_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Init and update submodules (via SSH)
+        run: |
+          git submodule update --init --remote --merge
+          git status
+
+      - name: Commit and push updated submodules
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if git status --porcelain | grep -q '^ M\|^A \|^ D\|^??'; then
+            git add .
+            git commit -m "Update submodules"
+            git push
+          else
+            echo "No changes to commit."
