@@ -3,32 +3,38 @@ name: Update Submodules via HTTPS
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-submodules:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo with submodules (remote update)
+      - name: Checkout main repo with submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+          persist-credentials: true
 
-      - name: Update submodules to latest remote commits
+      - name: Update all submodules to latest commits on their branches
         run: |
+          # Обновляем сабмодули по remote-ветке (branch = main)
           git submodule update --remote --merge
 
-      - name: Commit and push updated submodules
+      - name: Commit and push if submodules changed
         run: |
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Настраиваем автора коммита
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/Rostelecom-Practice/chokak-dev-env.git
-
-            if git status --porcelain | grep -q '^ M\|^A \|^ D\|^??'; then
-                git add .
-                git commit -m "Update submodules"
-                git push origin HEAD:main
-            else
-                echo "No changes to commit."
-            fi
+          # Проверяем, есть ли локальные изменения (то есть сабмодули подтянули новые коммиты)
+          if git status --porcelain | grep -q '^ M\|^A \|^ D\|^??'; then
+            git add .
+            git commit -m "chore: update submodules to latest"
+            # Просто пушим в текущую ветку (GITHUB_TOKEN уже настроен через checkout)
+            git push
+          else
+            echo "No submodule updates found, nothing to commit."
+          fi
