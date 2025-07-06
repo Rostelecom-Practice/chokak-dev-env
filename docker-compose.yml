@@ -140,6 +140,21 @@ services:
       start_period: 10s
     networks:
       - chokak-network
+  
+  telegram-bot:
+    build:
+      context: ./chokak-telegram-bot
+      dockerfile: Dockerfile
+    image: telegram-bot:latest
+    container_name: telegram-bot
+    depends_on:
+      chokak-gateway-server:
+        condition: service_healthy
+    environment:
+      API_TOKEN: ${API_TOKEN}
+      API_URL: http://chokak-gateway-server:8000/
+    networks:
+      - chokak-network
 
   prometheus:
     image: 'prom/prometheus:latest'
